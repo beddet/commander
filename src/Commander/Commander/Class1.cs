@@ -53,8 +53,6 @@ namespace Commander
         }
     }
 
-    
-
     public class CharHistory : History<char>
     {
         public CharHistory(char item, bool active = true) : base(item, active) { }
@@ -72,4 +70,61 @@ namespace Commander
         }
     }
 
+    public class FullCharCommander : Command<char, char, char?>
+    {
+        protected List<FullCharHistory> History = new List<FullCharHistory>();
+        private int _undoCount;
+
+        public override char Execute(char arg)
+        {
+            History.Add(new FullCharHistory(arg, CommandMethod.Execute));
+            _undoCount = 0;
+            return arg;
+        }
+
+        public override char? Undo()
+        {
+            if (!History.Any()) return null;
+            if (_undoCount == 0) _undoCount = 1;
+            var charHistory = History[History.Count - _undoCount];
+            var item = charHistory.Item;
+            History.Add(new FullCharHistory(item, CommandMethod.Undo));
+            _undoCount += 2;
+            return item;
+        }
+
+        public override char? Redo()
+        {
+            if (!History.Any()) return null;
+            var charHistory = History.Last();
+            var item = charHistory.Item;
+            History.Add(new FullCharHistory(item, CommandMethod.Redo));
+            _undoCount = 0;
+            return item;
+        }
+    }
+
+    public enum CommandMethod
+    {
+        Execute,
+        Undo,
+        Redo
+    }
+
+    public class FullCharHistory : FullHistory<char>
+    {
+        public FullCharHistory(char item, CommandMethod method) : base(item, method) { }
+    }
+
+    public class FullHistory<T>
+    {
+        public readonly T Item;
+        public CommandMethod Method;
+
+        public FullHistory(T item, CommandMethod method)
+        {
+            Item = item;
+            Method = method;
+        }
+    }
 }
